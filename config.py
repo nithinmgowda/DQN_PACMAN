@@ -29,7 +29,7 @@ EPSILON_END = 0.01
 EPSILON_DECAY = 0.995
 MEMORY_SIZE = 100000
 TARGET_UPDATE = 1000
-NUM_EPISODES = 10000
+NUM_EPISODES = 100  # Reduced from 10000 to 100 for faster training
 
 # Neural Network Architecture
 CONV_LAYERS = [
