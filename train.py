@@ -10,6 +10,10 @@ import matplotlib.pyplot as plt
 from datetime import datetime
 import os
 
+# Configure matplotlib for interactive plotting
+plt.ion()
+
+# Enable interactive plotting
 class DQN(nn.Module):
     def __init__(self):
         super(DQN, self).__init__()
@@ -80,6 +84,10 @@ class ReplayBuffer:
         return len(self.buffer)
 
 def train():
+    # Create models directory if it doesn't exist
+    model_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "models")
+    os.makedirs(model_dir, exist_ok=True)
+    
     env = PacmanEnv(render_mode="human")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     
@@ -92,6 +100,51 @@ def train():
     
     epsilon = EPSILON_START
     episode_rewards = []
+    moving_averages = []
+    
+    # Create and configure the plot window
+    plt.figure(figsize=(12, 8))
+    plt.subplot(2, 1, 1)
+    plt.title('Training Progress')
+    plt.xlabel('Episode')
+    plt.ylabel('Reward')
+    reward_line, = plt.plot([], [], 'b-', label='Episode Reward')
+    avg_line, = plt.plot([], [], 'r-', label='Moving Average (10 episodes)')
+    plt.legend()
+    
+    plt.subplot(2, 1, 2)
+    plt.xlabel('Episode')
+    plt.ylabel('Epsilon')
+    epsilon_line, = plt.plot([], [], 'g-', label='Exploration Rate (ε)')
+    plt.legend()
+    
+    plt.tight_layout()
+    plt.show()
+    
+    def update_plots():
+        episodes = list(range(len(episode_rewards)))
+        
+        # Update reward plot
+        reward_line.set_data(episodes, episode_rewards)
+        
+        # Update moving average
+        if len(episode_rewards) >= 10:
+            moving_avg = np.convolve(episode_rewards, np.ones(10)/10, mode='valid')
+            avg_line.set_data(range(9, len(episode_rewards)), moving_avg)
+            moving_averages.append(moving_avg[-1])
+        
+        # Update epsilon plot
+        epsilon_values = [EPSILON_START * (EPSILON_DECAY ** i) for i in range(len(episodes))]
+        epsilon_line.set_data(episodes, epsilon_values)
+        
+        # Update plot limits
+        for ax in plt.gcf().axes:
+            ax.relim()
+            ax.autoscale_view()
+        
+        # Force update the display
+        plt.gcf().canvas.draw()
+        plt.gcf().canvas.flush_events()
     
     for episode in range(NUM_EPISODES):
         state, _ = env.reset()
@@ -153,28 +206,41 @@ def train():
         # Decay epsilon
         epsilon = max(EPSILON_END, epsilon * EPSILON_DECAY)
         
-        # Record episode reward
+        # Record episode reward and update plot
         episode_rewards.append(episode_reward)
+        update_plots()
         
-        # Print progress
+        # Print progress and save model
         if (episode + 1) % 10 == 0:
             avg_reward = np.mean(episode_rewards[-10:])
             print(f"Episode {episode + 1}/{NUM_EPISODES}, Avg Reward: {avg_reward:.2f}, Epsilon: {epsilon:.2f}")
             
-            # Save the model periodically
-            if (episode + 1) % 100 == 0:
-                model_dir = "models"
-                os.makedirs(model_dir, exist_ok=True)
-                torch.save(policy_net.state_dict(),
-                         f"{model_dir}/pacman_dqn_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pth")
+            # Save model checkpoint
+            checkpoint_path = os.path.join(model_dir, f"pacman_dqn_checkpoint_{episode + 1}.pth")
+            torch.save({
+                'episode': episode + 1,
+                'model_state_dict': policy_net.state_dict(),
+                'optimizer_state_dict': optimizer.state_dict(),
+                'epsilon': epsilon,
+                'episode_rewards': episode_rewards,
+                'moving_averages': moving_averages
+            }, checkpoint_path)
+            print(f"Checkpoint saved to {checkpoint_path}")
     
-    # Plot training results
-    plt.figure(figsize=(10, 5))
-    plt.plot(episode_rewards)
-    plt.title('Training Progress')
-    plt.xlabel('Episode')
-    plt.ylabel('Reward')
-    plt.savefig('training_progress.png')
+    # Save final model and plots
+    final_model_path = os.path.join(model_dir, "pacman_dqn_final.pth")
+    torch.save({
+        'episode_count': NUM_EPISODES,
+        'model_state_dict': policy_net.state_dict(),
+        'optimizer_state_dict': optimizer.state_dict(),
+        'final_epsilon': epsilon,
+        'episode_rewards': episode_rewards,
+        'moving_averages': moving_averages
+    }, final_model_path)
+    print(f"\nTraining completed! Final model saved to {final_model_path}")
+    
+    # Save final plot
+    plt.savefig(os.path.join(model_dir, 'training_progress.png'))
     plt.close()
     
     env.close()
