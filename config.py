@@ -16,20 +16,20 @@ GHOST_COUNT = 4
 PELLET_REWARD = 10
 POWER_PELLET_REWARD = 50
 GHOST_REWARD = 200
-DEATH_PENALTY = -500
+DEATH_PENALTY = -100
 STEP_PENALTY = -1
 POWER_PELLET_DURATION = 300  # frames
 
 # Training Parameters
-LEARNING_RATE = 0.0001
-BATCH_SIZE = 64
+LEARNING_RATE = 0.001  # Increased for faster learning
+BATCH_SIZE = 32  # Reduced batch size
 GAMMA = 0.99
 EPSILON_START = 1.0
 EPSILON_END = 0.01
-EPSILON_DECAY = 0.995
-MEMORY_SIZE = 100000
-TARGET_UPDATE = 1000
-NUM_EPISODES = 100  # Reduced from 10000 to 100 for faster training
+EPSILON_DECAY = 0.9  # More aggressive decay
+MEMORY_SIZE = 10000  # Reduced memory size
+TARGET_UPDATE = 100  # More frequent updates
+NUM_EPISODES = 20  # Very short training for testing
 
 # Neural Network Architecture
 CONV_LAYERS = [

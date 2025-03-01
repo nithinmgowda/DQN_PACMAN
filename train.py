@@ -151,6 +151,12 @@ def train():
         state = torch.FloatTensor(state).unsqueeze(0).to(device)
         episode_reward = 0
         
+        # Save model every 5 episodes
+        if episode > 0 and episode % 5 == 0:
+            model_path = os.path.join(model_dir, f"pacman_dqn_checkpoint_{episode}.pth")
+            torch.save(policy_net.state_dict(), model_path)
+            print(f"Saved model checkpoint at episode {episode}")
+        
         while True:
             # Epsilon-greedy action selection
             if random.random() > epsilon:
