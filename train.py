@@ -154,7 +154,11 @@ def train():
         # Save model every 5 episodes
         if episode > 0 and episode % 5 == 0:
             model_path = os.path.join(model_dir, f"pacman_dqn_checkpoint_{episode}.pth")
-            torch.save(policy_net.state_dict(), model_path)
+            torch.save({
+                'episode': episode,
+                'model_state_dict': policy_net.state_dict(),
+                'optimizer_state_dict': optimizer.state_dict(),
+            }, model_path)
             print(f"Saved model checkpoint at episode {episode}")
         
         while True:

@@ -11,7 +11,21 @@ def play(model_path):
     
     # Load model
     model = DQN().to(device)
-    model.load_state_dict(torch.load(model_path))
+    try:
+        checkpoint = torch.load(model_path, map_location=device)
+        if isinstance(checkpoint, dict):
+            if 'model_state_dict' in checkpoint:
+                model.load_state_dict(checkpoint['model_state_dict'])
+            elif 'state_dict' in checkpoint:
+                model.load_state_dict(checkpoint['state_dict'])
+            else:
+                model.load_state_dict(checkpoint)
+        else:
+            model.load_state_dict(checkpoint)
+        print(f"Successfully loaded model from {model_path}")
+    except Exception as e:
+        print(f"Error loading model: {e}")
+        return
     model.eval()
     
     # Play episodes
